@@ -314,3 +314,490 @@ forward traffic 即实际上执行转发流量的操作，其根据的规则是�
 ---
 
 dry out
+
+egress selection
+
+​	不用再为每个出口单独部署流量出规则，直接由控制屏幕中央控制即可
+
+better bgp security
+
+上面的内容都或多或少借助了RCP的作用，但是由于都是指定prefix进行传播，导致网络对流量的理解十分有限，能提供的动作也十分有限了。
+
+data centers
+
+![image-20210819075335743](coursera_sdn.assets/image-20210819075335743.png)
+
+![image-20210819075640885](coursera_sdn.assets/image-20210819075640885.png)
+
+layer 2让问题变成了topology specific而不是topology dependent
+
+![image-20210819075809699](coursera_sdn.assets/image-20210819075809699.png)
+
+readdress the host，so we can use the mac 
+
+![image-20210819080059191](coursera_sdn.assets/image-20210819080059191.png)
+
+---
+
+### challenges in seperating the data and control planes
+
+![image-20210819080215393](coursera_sdn.assets/image-20210819080215393.png)
+
+SOLVING approaches: RCP,ONIX
+
+> 查询一下RCP的资料，之前忘记整理
+>
+> [BGP-based Routing Control Platform (RCP) (network-insight.net)](https://network-insight.net/2015/11/bgp-based-routing-control-platform-rcp/)
+>
+> The Routing Control Platform (RCP) is a centralized forwarding solution enabling the collection of a network topology map, running an algorithm and selecting preferred BGP route for each router in an Autonomous System (AS). RCP是一种中心化的转发方案，使得运行网络拓扑映射的集合通过运行算法来为每个在AS中的路由器选取适合的BGP路由
+>
+> It does this by peering both IGP and iBGP to neighboring routers and communicates the preferred routes using *unmodified iBGP*. 它（算法）通过与邻居路由器建立IGP以及iBGP对等体，并利用无修改的iBGP来交换各自prefer的路由
+>
+> It acts similar to that of an enhanced route reflector and does not sit in the data path.  它的行为像是一个路由反射器，但是并不出现在数据路径当中
+>
+> ![image-20210819080927055](coursera_sdn.assets/image-20210819080927055.png)
+
+所以下面，以RCP为例子，探讨一下所出现的问题
+
+![image-20210819081412947](coursera_sdn.assets/image-20210819081412947.png)
+
+![image-20210819081531571](coursera_sdn.assets/image-20210819081531571.png)
+
+把动态成本化为静态，存储下来即可。（但这样同样会有设备达到其限制）
+
+![image-20210819081644908](coursera_sdn.assets/image-20210819081644908.png)
+
+第二点，reliability for RCP
+
+- replicate RCPs("Hot Spare热备")
+  - run multiple identical servers
+- run independent replicas
+  - each replica has its own feed of routes
+  - each replica receives the same inputs and runs the same routing algorithm
+  - no need for a consistency protocol if both replicas always see the same information
+
+![image-20210819081945940](coursera_sdn.assets/image-20210819081945940.png)
+
+可能没法保证一致性，因为考虑的内容不太相同。
+
+![image-20210819082158155](coursera_sdn.assets/image-20210819082158155.png)
+
+![image-20210819083236950](coursera_sdn.assets/image-20210819083236950.png)
+
+上述三大挑战是很关键的。
+
+----
+
+这个课后测试头皮发麻，
+
+![image-20210819084721528](coursera_sdn.assets/image-20210819084721528.png)
+
+![image-20210819084733215](coursera_sdn.assets/image-20210819084733215.png)
+
+![image-20210819084814727](coursera_sdn.assets/image-20210819084814727.png)	![image-20210819084837392](coursera_sdn.assets/image-20210819084837392.png)
+
+![image-20210819084908588](coursera_sdn.assets/image-20210819084908588.png)
+
+![image-20210819084926542](coursera_sdn.assets/image-20210819084926542.png)
+
+![image-20210819084933291](coursera_sdn.assets/image-20210819084933291.png)
+
+![image-20210819084941540](coursera_sdn.assets/image-20210819084941540.png)
+
+![image-20210819084955429](coursera_sdn.assets/image-20210819084955429.png)
+
+![image-20210819085002164](coursera_sdn.assets/image-20210819085002164.png)
+
+---
+
+### routing Control Platform
+
+![image-20210819092020648](coursera_sdn.assets/image-20210819092020648.png)
+
+一些BGP面临的问题
+
+![image-20210819092101029](coursera_sdn.assets/image-20210819092101029.png)
+
+![image-20210819092125466](coursera_sdn.assets/image-20210819092125466.png)
+
+路由器之间是某种情况下独立的，没有任何路由器具有整个网络完整的BGP状态
+
+![image-20210819092404758](coursera_sdn.assets/image-20210819092404758.png)
+
+![image-20210819092413758](coursera_sdn.assets/image-20210819092413758.png)
+
+政策总是在每个网络局部被分袂，所以要找到一个代表统一网络范围政策是相当困难的
+
+路由本身必须携带状态，但上图这种分解让过程relatively difficult。
+
+所以，
+
+#### 引入RCP是有好处的
+
+![image-20210819092629560](coursera_sdn.assets/image-20210819092629560.png)
+
+有了RCP的控制，路由器本身不必使用状态路由标记，在配置上也简单多了
+
+![image-20210819092722300](coursera_sdn.assets/image-20210819092722300.png)
+
+且原始状况下，BGP会以意想不到的方式与底层进行交互，例如考虑IGP权重，会让host之间流量转发产生环路
+
+![image-20210819092841026](coursera_sdn.assets/image-20210819092841026.png)
+
+但例如RCP，会学习所有外部路由，具有完整路由信息。避免的内部环路
+
+![image-20210819093007438](coursera_sdn.assets/image-20210819093007438.png)
+
+但面临的问题就是，在所有设备已经运行IGP 相互做出独立决策的情况下由RCP来指定转发行为
+
+#### control protocal interactions
+
+![image-20210819093127593](coursera_sdn.assets/image-20210819093127593.png)
+
+![image-20210819093311970](coursera_sdn.assets/image-20210819093311970.png)
+
+设置固定点，即使区域内部某点故障了，通过RCP的设定，仍能保持egress出口不出错
+
+第二阶段
+
+![image-20210819093324323](coursera_sdn.assets/image-20210819093324323.png)
+
+不仅了解最佳路由，也要了解其他路由情况，所以知道的信息更加全面
+
+![image-20210819094453047](coursera_sdn.assets/image-20210819094453047.png)
+
+之前的BGP操作默认进行了路由汇总，但是路由器不知道哪些路由器需要更加具体的路由，以保证准确性
+
+![image-20210819094550450](coursera_sdn.assets/image-20210819094550450.png)
+
+第三
+
+![image-20210819094634821](coursera_sdn.assets/image-20210819094634821.png)
+
+![image-20210819094642786](coursera_sdn.assets/image-20210819094642786.png)
+
+总结：
+
+![image-20210819094709407](coursera_sdn.assets/image-20210819094709407.png)
+
+### video the4d network architecture
+
+![image-20210819094808374](coursera_sdn.assets/image-20210819094808374.png)
+
+![image-20210819094825152](coursera_sdn.assets/image-20210819094825152.png)
+
+这里面的control plane和前几节提到的也有不同，主要讲的还是路由协议，跟踪拓扑的变化，计算路由，转发表等，并不会做其他更复杂的事情（比如实现网络范围内的管理调用）。
+
+所以4D network的出现是来应对这种情况
+
+![image-20210819095022219](coursera_sdn.assets/image-20210819095022219.png)
+
+大量功能转入软件实现，消除了对网络供应商的依赖，加速了网络管理的创新
+
+![image-20210819095252621](coursera_sdn.assets/image-20210819095252621.png)
+
+#### 4d网络的终极目标
+
+![image-20210819095341682](coursera_sdn.assets/image-20210819095341682.png)
+
+实现网络级别的配置，而不是仅停留在路由器设备商，**最大限度减少整个网络的链路利用率**? 
+
+![image-20210819095526373](coursera_sdn.assets/image-20210819095526373.png)
+
+![image-20210819095537947](coursera_sdn.assets/image-20210819095537947.png)
+
+---
+
+![image-20210819095553447](coursera_sdn.assets/image-20210819095553447.png)
+
+![image-20210819095708926](coursera_sdn.assets/image-20210819095708926.png)
+
+![image-20210819095723602](coursera_sdn.assets/image-20210819095723602.png)
+
+4d模型的关键在于好的抽象，减少了问题的复杂性
+
+![image-20210819095823003](coursera_sdn.assets/image-20210819095823003.png)
+
+![image-20210819095855340](coursera_sdn.assets/image-20210819095855340.png)
+
+在这里，决策层可以同时看到流量工程与访问控制，所以在这里也可以执行负载均衡
+
+![image-20210819100022907](coursera_sdn.assets/image-20210819100022907.png)
+
+该论文还是期待消除控制平面的存在，但是SDN并未这样
+
+总结：
+
+![image-20210819100159206](coursera_sdn.assets/image-20210819100159206.png)
+
+![image-20210819100234294](coursera_sdn.assets/image-20210819100234294.png)
+
+》quiz 我承认，做题让人头皮发麻了。 做了30%，先继续往下看本节课程
+
+---
+
+[David Clark Interview | Coursera](https://www.coursera.org/learn/sdn/lecture/KoZho/david-clark-interview)
+
+专题 访谈1 
+
+SDN 的role 以及之后的作用
+
+1. 数据平面和控制平面分离。 而互联网原始架构中，考虑过分离吗？ 之前考虑过但是没用：基于一种哲学，我们需要可靠，所以我们向电脑妥协。不能基于第三方，让两个pc无法交互（例如dhcp服务器的崩坏让通信无法进行）在技术发展初期，很少有公司能把这个技术发展都发展好。
+
+虽然我们没能限制BGP在全局上的收敛速度，它明显比我们预计的时间要长。但是这些动态协议确实维持了很好的功能性
+
+当我们没有好的工具去控制网络延迟，我们需要新的网络
+
+我们无法在网络上得到鲁棒性的方案，可能是我们将流量路径过度具象化了
+
+sdn魔种程度上坚挺了边界的划分（ip layer 和 layer two）
+
+---
+
+另一个访谈就先跳过了。
+
+
+
+## week 3 module3：the control plane
+
+- key terms:
+  - openflow specification
+  - flow table caching: 流表结果缓存在交换机中的过程，用来防止所有的数据包都要经过控制器转发
+  - control channel：SDN控制器用来与SDN-capable的交换机交流的信道
+  - controller overhead: 控制器接管？指的是当交换机没有某个数据包的对应流表转发项而将该包发送到控制器处理的过程。
+  - openstack：云操作系统，利用网络虚拟化技术和openflow去展示资源的logical pool的抽象
+
+列举了一系列openflow的项目列表：
+
+[List of OpenFlow Software Projects (stanford.edu)](http://yuba.stanford.edu/~casado/of-sw.html)
+
+---
+
+### the control plane
+
+![image-20210819192247059](coursera_sdn.assets/image-20210819192247059.png)
+
+基础知识about openflow：
+
+![image-20210819192329643](coursera_sdn.assets/image-20210819192329643.png)
+
+控制信道的目的主要是为了更新流表，
+
+protocol specification 规定了两个交换机组件：
+
+第一是flow table
+
+![image-20210819192635260](coursera_sdn.assets/image-20210819192635260.png)
+
+交换机行为都取决于flow table中的表项
+
+第二是secure channel：
+
+![image-20210819192825573](coursera_sdn.assets/image-20210819192825573.png)
+
+它决定了交换机与外部控制器的通信方式
+
+ openflow1.0
+
+![image-20210819193414632](coursera_sdn.assets/image-20210819193414632.png)
+
+避免了过多流量在控制器拥塞
+
+![image-20210819193440044](coursera_sdn.assets/image-20210819193440044.png)
+
+当然openfflow switch也可以表现普通
+
+![image-20210819193705312](coursera_sdn.assets/image-20210819193705312.png)
+
+![image-20210819193728857](coursera_sdn.assets/image-20210819193728857.png)
+
+![image-20210819193805491](coursera_sdn.assets/image-20210819193805491.png)
+
+![image-20210819193824460](coursera_sdn.assets/image-20210819193824460.png)
+
+dpctl指令允许我们与switch进行交互，查看流表条目，修改流表条目等
+
+![image-20210819194208617](coursera_sdn.assets/image-20210819194208617.png)
+
+![image-20210819194217389](coursera_sdn.assets/image-20210819194217389.png)
+
+例如展示信息如上。
+
+我们可以用dump-flows指令来展示流表的装载情况
+
+![image-20210819194408291](coursera_sdn.assets/image-20210819194408291.png)
+
+
+
+![image-20210819194655935](coursera_sdn.assets/image-20210819194655935.png)
+
+如果装载条目为空，我们可以利用add-flow指令来增加，但是记得要把反向接口也加入其中，
+
+1.3版本引入了很多概念，action set和group
+
+
+
+![image-20210819194739527](coursera_sdn.assets/image-20210819194739527.png)
+
+![image-20210819194810172](coursera_sdn.assets/image-20210819194810172.png)
+
+这边也有一些可选项
+
+![image-20210819194820398](coursera_sdn.assets/image-20210819194820398.png)
+
+![image-20210819195046604](coursera_sdn.assets/image-20210819195046604.png)
+
+总结：
+
+![image-20210819195139425](coursera_sdn.assets/image-20210819195139425.png)
+
+poll 轮询
+
+### overview of sdn controller
+
+大纲：
+
+![image-20210819195333159](coursera_sdn.assets/image-20210819195333159.png)
+
+![image-20210819195346545](coursera_sdn.assets/image-20210819195346545.png)
+
+对控制器的选择有很多考量
+
+- 编程语言，这通常影响了性能
+- 学习曲线，即学习成本
+- 使用人员的基础以及相应的社区支持
+- 重点：
+  - 南向接口数量
+  - 北向接口（policy layer，如何能与应用层对接）
+  - 对openstack的支持
+  - 用于的场景，教育研究还是生产
+
+![image-20210819195545877](coursera_sdn.assets/image-20210819195545877.png)
+
+![image-20210819195619280](coursera_sdn.assets/image-20210819195619280.png)
+
+![image-20210819195638134](coursera_sdn.assets/image-20210819195638134.png)
+
+pox：
+
+![image-20210819195652499](coursera_sdn.assets/image-20210819195652499.png)
+
+简单的学习曲线，我们选择这个为例子
+
+![image-20210819195707200](coursera_sdn.assets/image-20210819195707200.png)
+
+ryu：
+
+![image-20210819195836299](coursera_sdn.assets/image-20210819195836299.png)
+
+floodlight：
+
+![image-20210819195856989](coursera_sdn.assets/image-20210819195856989.png)
+
+但是学习曲线还是相对较高的
+
+opendaylight：
+
+![image-20210819195927439](coursera_sdn.assets/image-20210819195927439.png)
+
+![image-20210819200031792](coursera_sdn.assets/image-20210819200031792.png)
+
+summary：
+
+![image-20210819200309454](coursera_sdn.assets/image-20210819200309454.png)
+
+---
+
+### customizing SDN control(part 1 : switching)
+
+![image-20210819200417396](coursera_sdn.assets/image-20210819200417396.png)
+
+自定义switch的行为
+
+回顾集线器和交换器
+
+利用pox交换机和mininet的拓扑结构
+
+实现两种不同的控制
+
+![image-20210819200459192](coursera_sdn.assets/image-20210819200459192.png)
+
+根据转发条目来学习路由
+
+利用dpctl来查看流表。
+
+code walkthrough
+
+实例1topo：
+
+![image-20210819200657335](coursera_sdn.assets/image-20210819200657335.png)
+
+![image-20210819200731297](coursera_sdn.assets/image-20210819200731297.png)
+
+执行上述操作完毕后，但实际上还并未实例化控制器。实例先尝试pingall操作
+
+![image-20210819215645780](coursera_sdn.assets/image-20210819215645780.png)
+
+![image-20210819215654547](coursera_sdn.assets/image-20210819215654547.png)
+
+先了解一下hub
+
+![image-20210819215717823](coursera_sdn.assets/image-20210819215717823.png)
+
+它不存储信息，它直接将接收的流量进行发送。
+
+这一节所用的实例代码：
+
+[pox/hub.py at carp · noxrepo/pox (github.com)](https://github.com/noxrepo/pox/blob/carp/pox/forwarding/hub.py)
+
+```python
+# Copyright 2012 James McCauley
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at:
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+Turns your complex OpenFlow switches into stupid hubs.
+"""
+
+from pox.core import core
+import pox.openflow.libopenflow_01 as of
+from pox.lib.util import dpidToStr
+
+log = core.getLogger()
+
+
+def _handle_ConnectionUp (event):
+  msg = of.ofp_flow_mod()
+  msg.actions.append(of.ofp_action_output(port = of.OFPP_FLOOD))
+  event.connection.send(msg)
+#得到消息后创建消息，然后再反馈回switch
+  log.info("Hubifying %s", dpidToStr(event.dpid))
+
+def launch ():
+  core.openflow.addListenerByName("ConnectionUp", _handle_ConnectionUp)
+
+  log.info("Hub running.")
+```
+
+但是仅仅用pip install指令的pox 好像没法像这个实例一样导入core
+
+[Installing POX — POX Manual Current documentation (noxrepo.github.io)](https://noxrepo.github.io/pox-doc/html/)
+
+查看pox的安装文档
+
+![image-20210819222719750](coursera_sdn.assets/image-20210819222719750.png)
+
+本实验出的结果与展示的并不一致
+
+![image-20210819222746315](coursera_sdn.assets/image-20210819222746315.png)
+
