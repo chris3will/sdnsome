@@ -801,3 +801,25 @@ def launch ():
 
 ![image-20210819222746315](coursera_sdn.assets/image-20210819222746315.png)
 
+---
+
+
+
+20200820的笔记出现重大失误，左手倒右手的复制粘贴弄错了，算是吃了个教训
+
+[Slicing Network Control | Coursera](https://www.coursera.org/learn/sdn/lecture/uqxgO/slicing-network-control) 当天的笔记学习到这里
+
+![image-20210820224510096](coursera_sdn.assets/image-20210820224510096.png)
+
+![image-20210820224521329](coursera_sdn.assets/image-20210820224521329.png)
+
+其中也记录了几个文档的出处，整理了北向接口和南向接口的大概。
+
+大概是学了控制平面，网络虚拟化，和一些技术，主要还是pox和mininet的介绍。继续加油吧。
+
+总之看了一遍肯定是不够，继续往下看吧，暑假的任务是过一遍，回过头来再继续补
+
+
+
+---
+
