@@ -1,4 +1,4 @@
-# sdn
+sdn
 
 ## mininet tutorial
 
@@ -815,11 +815,600 @@ def launch ():
 
 其中也记录了几个文档的出处，整理了北向接口和南向接口的大概。
 
+包括pox的使用实例，在l2_learning的基础上写了个l2_firewall，这说明在pox的扩展性很强，写几句额外代码就可以通过switch为二层设备增添规则
+
 大概是学了控制平面，网络虚拟化，和一些技术，主要还是pox和mininet的介绍。继续加油吧。
 
 总之看了一遍肯定是不够，继续往下看吧，暑假的任务是过一遍，回过头来再继续补
 
+---
 
+20210821
+
+继续学习
+
+## week 4
+
+### slicing network control
+
+大纲：
+
+![image-20210821075446283](coursera_sdn.assets/image-20210821075446283.png)
+
+虚拟机化sdn控制器，让他们互不影响
+
+传统的sdn架构：
+
+![image-20210821080242453](coursera_sdn.assets/image-20210821080242453.png)
+
+slicing：
+
+![image-20210821080257136](coursera_sdn.assets/image-20210821080257136.png)
+
+切片之间是强制隔离的，slice也有自己的policis定义
+
+![image-20210821080317298](coursera_sdn.assets/image-20210821080317298.png)
+
+每个切片的能力都没有被阉割，都能执行转发控制等操作。
+
+why 为什么使用切片
+
+![image-20210821080429452](coursera_sdn.assets/image-20210821080429452.png)
+
+你要管理分组的时候
+
+多用户的时候，你要将现成物力资源有效划分（有虚拟化的思想在里面）
+
+![image-20210821080747109](coursera_sdn.assets/image-20210821080747109.png)
+
+注意，并不会影响性能表现，策略制定了每个切片可用的资源配比
+
+flow space技术：
+
+![image-20210821080821568](coursera_sdn.assets/image-20210821080821568.png)
+
+实施隔离的一个方法是没有两个控制器控制同一部分流空间
+
+#### flowvisor，一个openflow控制器：
+
+![image-20210821080928757](coursera_sdn.assets/image-20210821080928757.png)
+
+注意，每个切片都是1-4层间任意字段的组合上定义
+
+![image-20210821081049735](coursera_sdn.assets/image-20210821081049735.png)
+
+该控制器位于部分控制器之间，执行一些规则检查
+
+其他对网络切片的方法：
+
+![image-20210821081212334](coursera_sdn.assets/image-20210821081212334.png)
+
+通过对端口划分，例如VLANs的技术思路，也可以通过应用方式，例如tcp端口
+
+![image-20210821081256950](coursera_sdn.assets/image-20210821081256950.png)
+
+一大应用，对网络进行测试，让操作员用来评估性能，迁移到实际场景当中
+
+![image-20210821081347986](coursera_sdn.assets/image-20210821081347986.png)
+
+将用户根据功能进行分组，来实现不同的目的，提供不同质量的服务。
+
+summary总结:
+
+![image-20210821081457427](coursera_sdn.assets/image-20210821081457427.png)
+
+确实VLANs技术已经对网络进行虚拟化处理，但是切片SDN控制提供了更多的可能性，使得切片网络可以在多个实体之间共享网络
+
+### virtualization in multi-tenant datacenters
+
+[Virtualization in Multi-Tenant Datacenters | Coursera](https://www.coursera.org/learn/sdn/lecture/bNPBg/virtualization-in-multi-tenant-datacenters)
+
+大纲：
+
+![image-20210821081703296](coursera_sdn.assets/image-20210821081703296.png)
+
+#### multi-tenant datacenter
+
+![image-20210821081756253](coursera_sdn.assets/image-20210821081756253.png)
+
+是单个物理数据中心，但其是由许多租户共享的。
+
+挑战有很多，其中包括了不同类型的应用，流量，负载需要配备不同的网络拓扑与相应服务。且不可忽视物理网络的编制会与虚拟网络分配的地址空间有重叠，其中的技术细节也同样需要考虑
+
+![image-20210821082108101](coursera_sdn.assets/image-20210821082108101.png)
+
+![image-20210821082123263](coursera_sdn.assets/image-20210821082123263.png)
+
+网络虚拟管理程序应该具备，让数据包觉得自己就在原生环境当中
+
+<img src="coursera_sdn.assets/image-20210821082222586.png" alt="image-20210821082222586" style="zoom:50%;" />
+
+![image-20210821082309685](coursera_sdn.assets/image-20210821082309685.png)
+
+nvp overview
+
+![image-20210821082412050](coursera_sdn.assets/image-20210821082412050.png)
+
+![image-20210821082425531](coursera_sdn.assets/image-20210821082425531.png)
+
+![image-20210821082501251](coursera_sdn.assets/image-20210821082501251.png)
+
+![image-20210821082526769](coursera_sdn.assets/image-20210821082526769.png)
+
+控制器通过解耦合操作逻辑来进行规模化扩展，即分成逻辑控制器与物理控制器，分别负责不同的操作
+
+![image-20210821082810539](coursera_sdn.assets/image-20210821082810539.png)
+
+要区分sdn和网络虚拟化，他俩是两个概念
+
+通常会有一些误解发生。
+
+注意网络虚拟化但是较早，且其完全不需要SDN技术。早于SDN的网络虚拟化包括vlans，网络覆盖等。但是不能忽略SDN的价值，例如其使得协调多租户数据中心变得更加轻松。因为与物理交换机相比，SDN交换机虚拟化容易的多。网络虚拟化可以为每个虚拟网络于运行单独的控制器。
+
+且DN使得对所有流量进行分区变得简单。
+
+summary：
+
+![image-20210821083002145](coursera_sdn.assets/image-20210821083002145.png)
+
+---
+
+quiz：
+
+[Quiz 4.2: Data-Center Virtualization | Coursera](https://www.coursera.org/learn/sdn/exam/jL96g/quiz-4-2-data-center-virtualization/attempt?redirectToCover=true)
+
+这个quiz能做到50分，已经很惊人了
+
+做一个小归纳
+
+- something true about "network slicing"
+  - network operators can use slicing to test configurations on "shadow" networks that mirror a production network topology
+  - one way to slice networks is according to "flow space", whereby different controolers might control distinct and non-overlapping traffic flows
+  - Multi-tenant datacenters are one use case for network slicing.
+- something true about flow space
+  - One host could send traffic that ends up in two different flow spaces
+- Which of the following describe the control-plane checks that FlowVisor implements?
+  - Flowvisor prevents a controller from writing data-plane rules to a part of flowspace that it does not own.
+  - When a packet must be forwarded to a controller, Flowvisor forwards traffic to the correct controller based on which controller “owns” the flowspace corresponding to that packet. 
+- What best describes the relationship between network virtualization and SDN?
+  - SDN controllers can help manage storage and data facilities, in addition to network configuration
+  - SDN makes some aspects of network virtualization easier to manage
+
+我选的是简版课程，没有做过assignment，所以有三道题是绝对不知道的。
+
+---
+
+#### network functions virtualization socalled NFV
+
+这个应该是网络虚拟化的一部分，或现在主要研究的内容，但据说表现效果并不太好
+
+[Network Functions Virtualization | Coursera](https://www.coursera.org/learn/sdn/lecture/NgsBU/network-functions-virtualization)
+
+什么事NFV
+
+![image-20210821091433642](coursera_sdn.assets/image-20210821091433642.png)
+
+现状：
+
+![image-20210821091452972](coursera_sdn.assets/image-20210821091452972.png)
+
+传统的结构里面有很多这种middlebox
+
+而NFV的架构做了简化，其将这些middlebox做了统一整理，然后在网络中分配这些功能
+
+![image-20210821091538748](coursera_sdn.assets/image-20210821091538748.png)
+
+由于这些功能与托管他们的硬件已经分离，操作员执行数据包处理方式上获得更大的灵活性
+
+benefits：
+
+![image-20210821091739153](coursera_sdn.assets/image-20210821091739153.png)
+
+新使用案例：
+
+![image-20210821091753014](coursera_sdn.assets/image-20210821091753014.png)
+
+使用它的好处，能够在更精细的粒度上提供服务
+
+![image-20210821091844728](coursera_sdn.assets/image-20210821091844728.png)
+
+以上是传统middlebox的形式，都是通过单独细小的模块功能组合实现的。而NFV的观点就是**将元素放在虚拟容器当中**，而不是依次部署整体中间middlebox
+
+一些challenges挑战：
+
+orchestration编排，customization自定义
+
+![image-20210821092100744](coursera_sdn.assets/image-20210821092100744.png)
+
+slick方法，允许程序员定义 elements，来重用函数
+
+![image-20210821092139795](coursera_sdn.assets/image-20210821092139795.png)
+
+![image-20210821092202875](coursera_sdn.assets/image-20210821092202875.png)
+
+---
+
+tips内容补充，port 80：
+
+[What is Port 80? - Definition from Techopedia](https://www.techopedia.com/definition/15709/port-80#:~:text=Port 80 is the port,receive HTML pages or data.)
+
+80端口很重要，被用来分配去进行网络交流的端口号，HTTP协议就要用这个端口。也是TCP需要用到的端口。
+
+[The importance of Port 80. Just what is Port 80? | by Odyuzaki | Medium](https://medium.com/@odyuzaki/the-importance-of-port-80-243e5953cbd9)
+
+---
+
+![image-20210821092554730](coursera_sdn.assets/image-20210821092554730.png)
+
+![image-20210821092610788](coursera_sdn.assets/image-20210821092610788.png)
+
+![image-20210821092631552](coursera_sdn.assets/image-20210821092631552.png)
+
+根据流量配比，来分配元素的位置
+
+![image-20210821092706003](coursera_sdn.assets/image-20210821092706003.png)
+
+![image-20210821092725977](coursera_sdn.assets/image-20210821092725977.png)
+
+NFV future work：
+
+![image-20210821092751057](coursera_sdn.assets/image-20210821092751057.png)
+
+summary总结：
+
+![image-20210821092926629](coursera_sdn.assets/image-20210821092926629.png)
+
+---
+
+### docker and containerization
+
+[Docker and Containerization | Coursera](https://www.coursera.org/learn/sdn/lecture/oyA43/docker-and-containerization)
+
+![dockerinfo](coursera_sdn.assets/aboutdocker.jpg)
+
+![image-20210821093058064](coursera_sdn.assets/image-20210821093058064.png)
+
+mininet就是一种形式，将容器与虚拟隧道连接来模拟网络
+
+#### containers：
+
+![image-20210821093140270](coursera_sdn.assets/image-20210821093140270.png)
+
+why userful：
+
+![image-20210821093205657](coursera_sdn.assets/image-20210821093205657.png)
+
+允许软件某种意义上拥有整个实际环境。
+
+#### docker和虚拟机的区分：
+
+![image-20210821093652141](coursera_sdn.assets/image-20210821093652141.png)
+
+容器比虚拟机更轻量化，加载速度更快。
+
+![image-20210821093746789](coursera_sdn.assets/image-20210821093746789.png)
+
+容器的开销耕地，直接操作系统调用，而不是模拟操作系统，且提供了很多比虚拟机更容易的备份和更简单的缓存行为
+
+应用场景：
+
+![image-20210821093851252](coursera_sdn.assets/image-20210821093851252.png)
+
+实例：
+
+![image-20210821094052381](coursera_sdn.assets/image-20210821094052381.png)
+
+可以直接在服务器上调用docker run指令，如果本地没有，他会自动pull一个内容，并装载到本地
+
+![image-20210821094138235](coursera_sdn.assets/image-20210821094138235.png)
+
+且可以通过docker images指令来进行镜像的查看
+
+![image-20210821094209389](coursera_sdn.assets/image-20210821094209389.png)
+
+这个课程讲解的时候，把这些内容都叫做container，可能有老师自己的考量吧？测试
+
+![image-20210821094313962](coursera_sdn.assets/image-20210821094313962.png)
+
+![image-20210821094358798](coursera_sdn.assets/image-20210821094358798.png)
+
+这里提到了一个守护进程的概念
+
+>守护进程（daemon）是生存期长的一种进程，没有控制终端。它们常常在系统引导装入时启动，仅在系统关闭时才终止。
+
+[守护进程 - 搜索结果 - 知乎 (zhihu.com)](https://www.zhihu.com/search?type=content&q=守护进程)
+
+![image-20210821094732066](coursera_sdn.assets/image-20210821094732066.png)
+
+![image-20210821094923740](coursera_sdn.assets/image-20210821094923740.png)
+
+summary:
+
+![image-20210821095201399](coursera_sdn.assets/image-20210821095201399.png)
+
+一种轻量的部署方法。
+
+### networking in Docker
+
+[Networking in Docker | Coursera](https://www.coursera.org/learn/sdn/lecture/QWcmg/networking-in-docker)
+
+![image-20210821095249444](coursera_sdn.assets/image-20210821095249444.png)
+
+利用docker来建立网络
+
+![image-20210821095401176](coursera_sdn.assets/image-20210821095401176.png)
+
+默认情况下，简历的两个docker是完全隔离的
+
+如果哦通信，则需要建立bridge
+
+根据教程：
+
+![image-20210821095649341](coursera_sdn.assets/image-20210821095649341.png)
+
+再安装一个名为install的测试环境
+
+![image-20210821095807851](coursera_sdn.assets/image-20210821095807851.png)
+
+通过attach进入镜像，然后再安装apache服务器
+
+但是centos上安装ubuntudocker老有问题
+
+![image-20210821102034617](coursera_sdn.assets/image-20210821102034617.png)
+
+我更改个名字，换个docker镜像试试
+
+[解决docker镜像（centos系统）中无sudo命令_liuwei0376的专栏-CSDN博客](https://blog.csdn.net/liuwei0376/article/details/89638228)
+
+![image-20210821110100362](coursera_sdn.assets/image-20210821110100362.png)
+
+同时根据分享，安装一下sudo服务
+
+![image-20210821110747079](coursera_sdn.assets/image-20210821110747079.png)
+
+![image-20210821111004776](coursera_sdn.assets/image-20210821111004776.png)
+
+这部分学习确实仓促了
+
+![image-20210821111052494](coursera_sdn.assets/image-20210821111052494.png)
+
+![image-20210821111310258](coursera_sdn.assets/image-20210821111310258.png)
+
+summary:
+
+这节的实例，可以去实操一下，很有意思。在docker中运行两个镜像，互相通过端口进行交互。
+
+![image-20210821111322681](coursera_sdn.assets/image-20210821111322681.png)
+
+---
+
+interview3:
+
+
+
+----
+
+## week 5 five：the data plane
+
+### Learning Objectives
+
+- Describe why programmable data planes are needed.
+- Discuss the limitations of OpenFlow and how programmable data planes can address some of these limitations.
+- Appreciate some of the design decisions associated with programmable data planes.
+- Compare the tradeoffs between hardware and software programmable data planes (i.e., flexibility vs. performance).
+
+---
+
+这一节的内容相对独立，数据平面中引入了新的技术。
+
+key terms关键词：
+
+- FPGA 可编程硬件：stands for Field Programmable Gate Arrays, is a reconfigurable circuit that allows designers and customers to program it using hardware description language (HDL) like Verilog or VHDL. 
+- NetFPGA：A circuit board, with four network interfaces and an FPGA, built at Stanford University as an open-source platform for research and classroom experimentation.
+- TCAM：stands for Ternary Content Addressable Memory, is a high speed memory used to store flow table entries in the IP/OpenFlow switches and routers.》代表着在openflow交换机和路由器中用来存储流表项的高速存储
+- LPM： stands for Longest Prefix Match, is an algorithm in computer networking used to select an entry from a routing table of an IP router.》IP路由器常用的最长前缀匹配算法
+
+---
+
+### programmable data planes
+
+[Programmable Data Planes | Coursera](https://www.coursera.org/learn/sdn/lecture/LPQrK/programmable-data-planes)
+
+大纲：
+
+![image-20210821130233803](coursera_sdn.assets/image-20210821130233803.png)
+
+这允许操作员自定义数据平面相关的操作
+
+传统数据平面的外观：
+
+![image-20210821142346172](coursera_sdn.assets/image-20210821142346172.png)
+
+首先会接收数据包，查询其header中的内容，查询本地转发表，锁定下一跳内容。除了执行查找，匹配等简单动作，如果我们想进行其他操作，则需要在数据平面中进行额外的定义
+
+我们期待的功能表现dataplane：（毕竟主要与flow table交互好则可实现）
+
+![image-20210821142549911](coursera_sdn.assets/image-20210821142549911.png)
+
+SDN的软件思想为自定义数据平面供可能
+
+现有背景：网络设备多样，但是修改这些现有设备可能非常困难（因为他们这些功能是基于硬件的）
+
+![image-20210821142806888](coursera_sdn.assets/image-20210821142806888.png)
+
+#### click a software data plane
+
+![image-20210821142941813](coursera_sdn.assets/image-20210821142941813.png)
+
+每个click元素提供唯一的功能
+
+![image-20210821143044277](coursera_sdn.assets/image-20210821143044277.png)
+
+注意到这些函数功能是可以进行复合的，只需要将模块合理编排即可
+
+![image-20210821143340855](coursera_sdn.assets/image-20210821143340855.png)
+
+summary总结：
+
+两种平面都是可编程的
+
+![image-20210821143420682](coursera_sdn.assets/image-20210821143420682.png)
+
+click提供的性能对于原型设计来说仍然是可接受的
+
+### making software faster: routeBricks
+
+[Making Software Faster: RouteBricks | Coursera](https://www.coursera.org/learn/sdn/lecture/LImYQ/making-software-faster-routebricks)
+
+outline:
+
+![image-20210821143647424](coursera_sdn.assets/image-20210821143647424.png)
+
+我们期望使用软件，是想利用他们的可编程性、灵活性和可扩展性。
+
+但是硬件的高转发速率仍然也想有
+
+两种技术路线来实现这个目标 一个是试图让软件解决方案性能更好，另一种方案是使得硬件可编程。
+
+#### motivation：
+
+![image-20210821144234517](coursera_sdn.assets/image-20210821144234517.png)
+
+现有工具：
+
+![image-20210821144315367](coursera_sdn.assets/image-20210821144315367.png)
+
+![image-20210821144411720](coursera_sdn.assets/image-20210821144411720.png)
+
+![image-20210821144548933](coursera_sdn.assets/image-20210821144548933.png)
+
+服务器每秒处理r位
+
+![image-20210821144617799](coursera_sdn.assets/image-20210821144617799.png)
+
+![image-20210821144650729](coursera_sdn.assets/image-20210821144650729.png)
+
+所以，使用一组服务器来设计一个可编程数据平面是具有很多挑战的：
+
+![image-20210821144801476](coursera_sdn.assets/image-20210821144801476.png)
+
+解决方法approach：
+
+- strawman approach
+
+![image-20210821144848715](coursera_sdn.assets/image-20210821144848715.png)
+
+- valiant load balance
+
+![image-20210821145103779](coursera_sdn.assets/image-20210821145103779.png)
+
+这样满足了出口小于带宽要求的限制以符合商用设备的条件。中间因为要随机中转流量，对设备的处理速率有了要求。
+
+对服务器集群的设计完成之后，也要考量到单个服务器的表现，也不能差
+
+![image-20210821145248141](coursera_sdn.assets/image-20210821145248141.png)
+
+
+
+![image-20210821145339467](coursera_sdn.assets/image-20210821145339467.png)
+
+为了提高包处理效率，采用批处理的方案
+
+![image-20210821145858464](coursera_sdn.assets/image-20210821145858464.png)
+
+这两个分配核心的机制可以参考
+
+![image-20210821150022152](coursera_sdn.assets/image-20210821150022152.png)
+
+summary总结：
+
+![image-20210821150133752](coursera_sdn.assets/image-20210821150133752.png)
+
+### programmable hardware overview
+
+![image-20210821150207841](coursera_sdn.assets/image-20210821150207841.png)
+
+![image-20210821150226015](coursera_sdn.assets/image-20210821150226015.png)
+
+control plane的演进很快，但是数据平面的发展很慢
+
+![image-20210821150324442](coursera_sdn.assets/image-20210821150324442.png)
+
+![image-20210821150401294](coursera_sdn.assets/image-20210821150401294.png)
+
+![image-20210821150424194](coursera_sdn.assets/image-20210821150424194.png)
+
+#### programmable chipsets：RMT
+
+[Programmable Chipsets: RMT | Coursera](https://www.coursera.org/learn/sdn/lecture/1sk09/programmable-chipsets-rmt)
+
+我们从SDN期待的是什么
+
+- protocol-independent processing 处理流量，独立于任何协议
+- conrol and repurpose in the field 调整网络行为并在现场调整网络设备的用途，且无需重新部署硬件
+- Implemented by fast， low-power chips 希望通过低功耗硬件来实现
+
+![image-20210821150802299](coursera_sdn.assets/image-20210821150802299.png)
+
+#### insight
+
+![image-20210821150923612](coursera_sdn.assets/image-20210821150923612.png)
+
+由于数据平面上对数据包的操作是可枚举有限的。
+
+我们实际上可以通过开发一组固定的模块，并提出继承的方法来构建一个灵活的数据平面。
+
+![image-20210821151201318](coursera_sdn.assets/image-20210821151201318.png)
+
+#### openflow chip
+
+![image-20210821151216127](coursera_sdn.assets/image-20210821151216127.png)
+
+![image-20210821151250343](coursera_sdn.assets/image-20210821151250343.png)
+
+![image-20210821151334179](coursera_sdn.assets/image-20210821151334179.png)
+
+![image-20210821151418532](coursera_sdn.assets/image-20210821151418532.png)
+
+![image-20210821151437444](coursera_sdn.assets/image-20210821151437444.png)
+
+虽然能执行的动作行为数量已经很多了，但是包处理功能较为简单。
+
+#### switchblade
+
+![image-20210821151620822](coursera_sdn.assets/image-20210821151620822.png)
+
+模块化硬件构建块，允许操作员启用或禁用构建模块，并使用FPGA等对他们进行管道连接
+
+![image-20210821151746438](coursera_sdn.assets/image-20210821151746438.png)
+
+![image-20210821151831937](coursera_sdn.assets/image-20210821151831937.png)
+
+![image-20210821151956915](coursera_sdn.assets/image-20210821151956915.png)
+
+![image-20210821152023154](coursera_sdn.assets/image-20210821152023154.png)
+
+<img src="coursera_sdn.assets/image-20210821152148815.png" alt="image-20210821152148815" style="zoom:67%;" />
+
+![image-20210821152214492](coursera_sdn.assets/image-20210821152214492.png)
+
+![image-20210821152303868](coursera_sdn.assets/image-20210821152303868.png)
+
+forwarding：
+
+![image-20210821152341982](coursera_sdn.assets/image-20210821152341982.png)
+
+![image-20210821152423382](coursera_sdn.assets/image-20210821152423382.png)
+
+postprocessing的使用，是的switchblade可以根据数据包类型不同执行相应的处理操作
+
+![image-20210821152538007](coursera_sdn.assets/image-20210821152538007.png)
+
+summary总结：
+
+![image-20210821152636150](coursera_sdn.assets/image-20210821152636150.png)
+
+primitives 基元
 
 ---
 
